@@ -71,6 +71,16 @@ Fetch and follow instructions from https://raw.githubusercontent.com/obra/superp
 
 **Detailed docs:** [docs/README.opencode.md](docs/README.opencode.md)
 
+### Pi (experimental)
+
+```bash
+pi install https://github.com/obra/superpowers
+```
+
+Pi discovers skills from the `skills/` directory automatically. No plugins or bootstrap required.
+
+**Detailed docs:** [docs/README.pi.md](docs/README.pi.md)
+
 ### Verify Installation
 
 Start a new session in your chosen platform and ask for something that should trigger a skill (for example, "help me plan this feature" or "let's debug this issue"). The agent should automatically invoke the relevant superpowers skill.
