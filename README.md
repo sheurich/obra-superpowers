@@ -77,7 +77,7 @@ Fetch and follow instructions from https://raw.githubusercontent.com/obra/superp
 pi install https://github.com/obra/superpowers
 ```
 
-Pi discovers skills from the `skills/` directory automatically. No plugins or bootstrap required.
+Pi discovers skills from the `skills/` directory automatically. No plugins or bootstrap required for skills. For subagent-based workflows, install the bundled Pi agent profile from `.pi/agents/` (see docs).
 
 **Detailed docs:** [docs/README.pi.md](docs/README.pi.md)
 
