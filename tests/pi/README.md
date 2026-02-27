@@ -1,4 +1,4 @@
-# Pi smoke tests
+# Pi tests
 
 Run from repository root:
 
@@ -6,21 +6,31 @@ Run from repository root:
 ./tests/pi/run-tests.sh
 ```
 
-Run only the smoke test directly:
+Run a specific test directly:
 
 ```bash
 ./tests/pi/test-smoke.sh
+./tests/pi/test-bootstrap.sh
 ```
 
-What this smoke test verifies:
+## test-smoke.sh
+
+Verifies:
 
 1. `pi install` works with an isolated `PI_CODING_AGENT_DIR` (temp directory)
-2. The install writes package settings into that isolated directory
-3. Pi package resolution can discover
-   `skills/brainstorming/SKILL.md` from this repo
+2. Install writes package settings into that isolated directory
+3. Pi package resolution discovers `skills/brainstorming/SKILL.md`
 4. `pi list` shows the installed local package
-5. `~/.pi/agent/settings.json` is unchanged
-   (guard against accidental global writes)
+5. `~/.pi/agent/settings.json` is unchanged (no accidental global writes)
+
+## test-bootstrap.sh
+
+Verifies:
+
+1. Pi package resolution discovers `.pi/extensions/bootstrap.ts`
+2. Bootstrap extension registers `before_agent_start`
+3. Bootstrap injects deterministic `using-superpowers` + Pi tool mapping content
+4. Bootstrap does not inject duplicate content if marker is already present
 
 Requirements:
 

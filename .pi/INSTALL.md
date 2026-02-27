@@ -11,7 +11,7 @@
 pi install https://github.com/obra/superpowers
 ```
 
-Pi clones the repo and discovers all skills from the `skills/` directory automatically.
+Pi clones the repo, discovers skills from `skills/`, and autoloads `.pi/extensions/bootstrap.ts` via the package manifest.
 
 ### Alternative: Local Clone
 
@@ -33,28 +33,37 @@ Then start pi and use `/skill:brainstorming` to confirm skills load.
 
 ## Configure Required Subagents
 
-Some Superpowers skills call a `code-reviewer` subagent.
+Some Superpowers workflows use multiple subagent profiles:
 
-Pi packages do not install agent profiles automatically, so install the bundled profile once:
+- `implementer`
+- `spec-reviewer`
+- `code-quality-reviewer`
+- `code-reviewer`
+
+Pi packages do not install agent profiles automatically, so install the bundled profiles once.
 
 If installed from GitHub:
 
 ```bash
 mkdir -p ~/.pi/agent/agents
-ln -sf ~/.pi/agent/git/github.com/obra/superpowers/.pi/agents/code-reviewer.md ~/.pi/agent/agents/code-reviewer.md
+for profile in implementer spec-reviewer code-quality-reviewer code-reviewer; do
+  ln -sf ~/.pi/agent/git/github.com/obra/superpowers/.pi/agents/${profile}.md ~/.pi/agent/agents/${profile}.md
+done
 ```
 
 If installed from a local path:
 
 ```bash
 mkdir -p ~/.pi/agent/agents
-ln -sf /path/to/superpowers/.pi/agents/code-reviewer.md ~/.pi/agent/agents/code-reviewer.md
+for profile in implementer spec-reviewer code-quality-reviewer code-reviewer; do
+  ln -sf /path/to/superpowers/.pi/agents/${profile}.md ~/.pi/agent/agents/${profile}.md
+done
 ```
 
 Verify:
 
 ```bash
-ls ~/.pi/agent/agents/code-reviewer.md
+ls ~/.pi/agent/agents/{implementer,spec-reviewer,code-quality-reviewer,code-reviewer}.md
 ```
 
 ## Updating
