@@ -146,7 +146,15 @@ The bootstrap extension (`.pi/extensions/bootstrap.ts`) injects a fixed mapping 
 | Claude `Task` tool supports delegation | Maps to Pi `subagent` when available | Depends on harness extensions; Pi core has no built-in subagent |
 | `TodoWrite` checklist workflow exists | Maps to markdown checklist output | No native interactive task list UI |
 
-### Subagent Differences
+### Workflow mapping validation (Issue #435 Phase 2)
+
+| Required mapping area | Pi mapping | Validation evidence | Caveats |
+|---|---|---|---|
+| Skill invocation behavior | Skills are package-discovered; `using-superpowers` is preloaded by bootstrap; explicit loads use `/skill:<name>` or `read` | `tests/pi/test-smoke.sh`, `tests/pi/test-bootstrap.sh`, `tests/pi/test-planning-execution.sh` | Model still chooses when to load non-bootstrap skills automatically |
+| Task tracking behavior | `TodoWrite` is mapped to markdown checklist output in the injected bootstrap block | `tests/pi/test-bootstrap.sh`, `tests/pi/test-planning-execution.sh` (assert mapping text) | No native interactive checklist state in Pi |
+| Delegated execution behavior | Claude `Task` maps to Pi `subagent` (if harness extension provides it); required review/implementation profiles are bundled in `.pi/agents/` | `tests/pi/test-planning-execution.sh` (assert mapping text + required profiles) | Pi core ships no built-in subagent tool |
+
+### Subagent differences
 
 Pi core does not include built-in subagents. If your Pi harness provides a `subagent` tool, it maps to Claude Code's `Task` behavior.
 
@@ -229,14 +237,26 @@ Pi includes skill descriptions in the system prompt but relies on the model to d
 
 If the agent attempts a Claude Code tool that doesn't exist in pi, remind it of the mapping above.
 
-## Known Differences from Claude Code
+## Known differences matrix (Pi vs Claude Code)
 
-- **No `TodoWrite`** — Pi has no built-in task tracking tool. Skills that use `TodoWrite` checklists produce markdown checklists instead.
-- **No hooks system** — Pi has no Claude-style hooks, so Superpowers uses a package-managed extension (`.pi/extensions/bootstrap.ts`) to inject a deterministic bootstrap block at `before_agent_start`.
-- **Package install required** — Superpowers for Pi is supported via `pi install` (git URL or local path) so both skills and `.pi/extensions/bootstrap.ts` load together.
-- **Skill loading** — Claude Code has a dedicated `Skill` tool. Pi uses `read` on SKILL.md files. Functionally equivalent, syntactically different.
-- **Subagent model** — Pi core does not include built-in subagents. If your harness provides a `subagent` tool, Claude Code's `Task` usually maps to single mode.
-- **Agent profiles** — Pi packages do not auto-install agent profiles. Superpowers ships required Pi profiles in `.pi/agents/`; install them in `~/.pi/agent/agents/`.
+| Area | Claude Code behavior | Pi behavior | Impact / workaround |
+|---|---|---|---|
+| Skill loading primitive | Dedicated `Skill` tool | `/skill:<name>` or `read` on `SKILL.md` | Different invocation syntax, same content loading model |
+| Session bootstrap | Hook-style startup behavior | Package-managed extension (`.pi/extensions/bootstrap.ts`) injects deterministic block at `before_agent_start` | Requires package install path so extension is discoverable |
+| Task tracking primitive | Native `TodoWrite` tool | No native equivalent; bootstrap maps to markdown checklist output | Checklist state is text-based, not interactive tool state |
+| Delegation primitive | Native `Task` tool | Optional harness `subagent` tool | Depends on harness extensions; Pi core alone does not provide subagents |
+| Agent profiles | Harness-native task roles | Manual symlink/copy install from `.pi/agents/` to `~/.pi/agent/agents/` | One-time setup required for subagent workflows |
+
+## Acceptance verification mapped to GitHub issue #435
+
+Phase 2 criteria from [issue #435](https://github.com/obra/superpowers/issues/435):
+
+| #435 Phase 2 acceptance criterion | Evidence in this repository |
+|---|---|
+| Integration behavior implemented and documented | `.pi/extensions/bootstrap.ts`, `package.json` (`pi.extensions`/`pi.skills`), `.pi/INSTALL.md`, `docs/README.pi.md`, `README.md` |
+| Mapping behavior covered by tests | `tests/pi/test-bootstrap.sh` (bootstrap mapping injection), `tests/pi/test-planning-execution.sh` (planning/execution workflow mapping path), `tests/pi/run-tests.sh` |
+| Known differences documented clearly | `docs/README.pi.md` → “Known differences matrix (Pi vs Claude Code)” |
+| Existing harnesses remain stable | Changes scoped to Pi files/docs/tests; run Pi test suite via `tests/pi/run-tests.sh` |
 
 ## Getting Help
 
