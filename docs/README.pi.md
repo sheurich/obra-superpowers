@@ -10,7 +10,7 @@ Complete guide for using Superpowers with [pi](https://github.com/mariozechner/p
 pi install https://github.com/obra/superpowers
 ```
 
-Pi clones the repository and discovers all skills from the `skills/` directory automatically. No plugins, hooks, or bootstrap scripts required for skill loading. For subagent-based workflows, install the bundled agent profile from `.pi/agents/`.
+Pi clones the repository and discovers all skills from the `skills/` directory automatically. Superpowers also ships a package-managed Pi bootstrap extension at `.pi/extensions/bootstrap.ts` that injects deterministic tool-mapping guidance on each prompt. For subagent-based workflows, install the bundled agent profiles from `.pi/agents/`.
 
 ## Installation Options
 
@@ -35,16 +35,6 @@ If you already have a local clone:
 pi install /path/to/superpowers
 ```
 
-### Option C: Symlink Skills Only
-
-To add superpowers skills alongside an existing skill tree:
-
-```bash
-ln -s /path/to/superpowers/skills ~/.pi/agent/skills/superpowers
-```
-
-> **Note:** Symlinked skills are not managed by `pi update` or shown by `pi list`. Update manually with `git pull`.
-
 ### Verify Installation
 
 Check the package appears:
@@ -57,32 +47,39 @@ Then start pi and type `/skill:brainstorming` to confirm skills load.
 
 ### Configure Required Subagent Profiles
 
-Some Superpowers skills dispatch a `code-reviewer` subagent.
+Some Superpowers workflows use multiple subagent profiles.
 
 | Agent profile | Used by |
 |---|---|
-| `code-reviewer` | `requesting-code-review` and workflows that depend on it |
+| `implementer` | `subagent-driven-development` task implementation role |
+| `spec-reviewer` | `subagent-driven-development` spec compliance review role |
+| `code-quality-reviewer` | `subagent-driven-development` code quality review role |
+| `code-reviewer` | `requesting-code-review` and related review workflows |
 
-Pi packages do not auto-install agent profiles, so install the bundled profile once:
+Pi packages do not auto-install agent profiles, so install the bundled profiles once:
 
 If installed from GitHub:
 
 ```bash
 mkdir -p ~/.pi/agent/agents
-ln -sf ~/.pi/agent/git/github.com/obra/superpowers/.pi/agents/code-reviewer.md ~/.pi/agent/agents/code-reviewer.md
+for profile in implementer spec-reviewer code-quality-reviewer code-reviewer; do
+  ln -sf ~/.pi/agent/git/github.com/obra/superpowers/.pi/agents/${profile}.md ~/.pi/agent/agents/${profile}.md
+done
 ```
 
 If installed from a local path:
 
 ```bash
 mkdir -p ~/.pi/agent/agents
-ln -sf /path/to/superpowers/.pi/agents/code-reviewer.md ~/.pi/agent/agents/code-reviewer.md
+for profile in implementer spec-reviewer code-quality-reviewer code-reviewer; do
+  ln -sf /path/to/superpowers/.pi/agents/${profile}.md ~/.pi/agent/agents/${profile}.md
+done
 ```
 
 Verify:
 
 ```bash
-ls ~/.pi/agent/agents/code-reviewer.md
+ls ~/.pi/agent/agents/{implementer,spec-reviewer,code-quality-reviewer,code-reviewer}.md
 ```
 
 ## Usage
@@ -138,7 +135,26 @@ Skills are written for Claude Code. Pi equivalents:
 | `Edit` | `edit` | Same |
 | `Bash` | `bash` | Same |
 
-### Subagent Differences
+### Phase 2 Bootstrap Workflow Mapping
+
+The bootstrap extension (`.pi/extensions/bootstrap.ts`) injects a fixed mapping block before each agent run so core Superpowers assumptions stay explicit in Pi:
+
+| Superpowers expectation | Pi bootstrap behavior | Caveat |
+|---|---|---|
+| `using-superpowers` should be active at session start | Loads `skills/using-superpowers/SKILL.md`, strips frontmatter, appends content to the system prompt | If the skill file is missing, bootstrap no-ops |
+| Claude `Skill` tool is available | Maps to `/skill:<name>` or direct `read` on `SKILL.md` | Model still decides when to load other skills |
+| Claude `Task` tool supports delegation | Maps to Pi `subagent` when available | Depends on harness extensions; Pi core has no built-in subagent |
+| `TodoWrite` checklist workflow exists | Maps to markdown checklist output | No native interactive task list UI |
+
+### Workflow mapping validation (Issue #435 Phase 2)
+
+| Required mapping area | Pi mapping | Validation evidence | Caveats |
+|---|---|---|---|
+| Skill invocation behavior | Skills are package-discovered; `using-superpowers` is preloaded by bootstrap; explicit loads use `/skill:<name>` or `read` | `tests/pi/test-smoke.sh`, `tests/pi/test-bootstrap.sh`, `tests/pi/test-planning-execution.sh` | Model still chooses when to load non-bootstrap skills automatically |
+| Task tracking behavior | `TodoWrite` is mapped to markdown checklist output in the injected bootstrap block | `tests/pi/test-bootstrap.sh`, `tests/pi/test-planning-execution.sh` (assert mapping text) | No native interactive checklist state in Pi |
+| Delegated execution behavior | Claude `Task` maps to Pi `subagent` (if harness extension provides it); required review/implementation profiles are bundled in `.pi/agents/` | `tests/pi/test-planning-execution.sh` (assert mapping text + required profiles) | Pi core ships no built-in subagent tool |
+
+### Subagent differences
 
 Pi core does not include built-in subagents. If your Pi harness provides a `subagent` tool, it maps to Claude Code's `Task` behavior.
 
@@ -150,15 +166,15 @@ Pi `subagent` tools typically provide three modes:
 
 ## Architecture
 
-Pi's package system discovers superpowers with zero integration code:
+Pi's package system discovers superpowers resources through package metadata:
 
 1. `pi install` clones the repo
-2. Pi scans the `skills/` directory (convention-based discovery)
-3. Each `SKILL.md` frontmatter is parsed for name and description
-4. Skills appear in the system prompt's `<available_skills>` XML
-5. The agent loads full skill content on demand via `read`
+2. Pi reads this repository's `package.json` `pi` manifest (`skills` + `.pi/extensions`)
+3. Skills appear in the system prompt's `<available_skills>` XML
+4. `.pi/extensions/bootstrap.ts` autoloads and injects deterministic tool-mapping guidance
+5. The agent loads full skill content on demand via `/skill:<name>` or `read`
 
-No plugins, hooks, bootstrap scripts, or CLI wrappers needed.
+No external plugin wrapper is required.
 
 ### Skill Locations
 
@@ -174,9 +190,11 @@ Pi discovers skills from multiple locations. On name collision, the first skill 
 Pi-specific resources live in `.pi/` in this repository:
 
 - `.pi/INSTALL.md`
+- `.pi/agents/implementer.md`
+- `.pi/agents/spec-reviewer.md`
+- `.pi/agents/code-quality-reviewer.md`
 - `.pi/agents/code-reviewer.md`
-
-If we add Pi-specific extensions later, they should live under `.pi/extensions/`.
+- `.pi/extensions/bootstrap.ts`
 
 ## Updating
 
@@ -202,11 +220,6 @@ cd /path/to/superpowers && git pull
 pi remove https://github.com/obra/superpowers
 ```
 
-For symlink installs:
-
-```bash
-rm ~/.pi/agent/skills/superpowers
-```
 
 ## Troubleshooting
 
@@ -224,13 +237,26 @@ Pi includes skill descriptions in the system prompt but relies on the model to d
 
 If the agent attempts a Claude Code tool that doesn't exist in pi, remind it of the mapping above.
 
-## Known Differences from Claude Code
+## Known differences matrix (Pi vs Claude Code)
 
-- **No `TodoWrite`** — Pi has no built-in task tracking tool. Skills that use `TodoWrite` checklists produce markdown checklists instead.
-- **No hooks system** — Pi doesn't inject bootstrap content on session start. The `using-superpowers` skill triggers via its description in `<available_skills>`.
-- **Skill loading** — Claude Code has a dedicated `Skill` tool. Pi uses `read` on SKILL.md files. Functionally equivalent, syntactically different.
-- **Subagent model** — Pi core does not include built-in subagents. If your harness provides a `subagent` tool, Claude Code's `Task` usually maps to single mode.
-- **Agent profiles** — Pi packages do not auto-install agent profiles. Superpowers ships required Pi profiles in `.pi/agents/`; install them in `~/.pi/agent/agents/`.
+| Area | Claude Code behavior | Pi behavior | Impact / workaround |
+|---|---|---|---|
+| Skill loading primitive | Dedicated `Skill` tool | `/skill:<name>` or `read` on `SKILL.md` | Different invocation syntax, same content loading model |
+| Session bootstrap | Hook-style startup behavior | Package-managed extension (`.pi/extensions/bootstrap.ts`) injects deterministic block at `before_agent_start` | Requires package install path so extension is discoverable |
+| Task tracking primitive | Native `TodoWrite` tool | No native equivalent; bootstrap maps to markdown checklist output | Checklist state is text-based, not interactive tool state |
+| Delegation primitive | Native `Task` tool | Optional harness `subagent` tool | Depends on harness extensions; Pi core alone does not provide subagents |
+| Agent profiles | Harness-native task roles | Manual symlink/copy install from `.pi/agents/` to `~/.pi/agent/agents/` | One-time setup required for subagent workflows |
+
+## Acceptance verification mapped to GitHub issue #435
+
+Phase 2 criteria from [issue #435](https://github.com/obra/superpowers/issues/435):
+
+| #435 Phase 2 acceptance criterion | Evidence in this repository |
+|---|---|
+| Integration behavior implemented and documented | `.pi/extensions/bootstrap.ts`, `package.json` (`pi.extensions`/`pi.skills`), `.pi/INSTALL.md`, `docs/README.pi.md`, `README.md` |
+| Mapping behavior covered by tests | `tests/pi/test-bootstrap.sh` (bootstrap mapping injection), `tests/pi/test-planning-execution.sh` (planning/execution workflow mapping path), `tests/pi/run-tests.sh` |
+| Known differences documented clearly | `docs/README.pi.md` → “Known differences matrix (Pi vs Claude Code)” |
+| Existing harnesses remain stable | Changes scoped to Pi files/docs/tests; run Pi test suite via `tests/pi/run-tests.sh` |
 
 ## Getting Help
 

@@ -35,7 +35,9 @@ while [[ $# -gt 0 ]]; do
             echo "  --help, -h         Show this help"
             echo ""
             echo "Tests:"
-            echo "  test-smoke.sh      Isolated install + skill discovery smoke test"
+            echo "  test-smoke.sh                Isolated install + skill discovery smoke test"
+            echo "  test-bootstrap.sh            Bootstrap extension discovery + prompt injection"
+            echo "  test-planning-execution.sh   Planning/execution workflow integration path"
             exit 0
             ;;
         *)
@@ -48,6 +50,8 @@ done
 
 tests=(
     "test-smoke.sh"
+    "test-bootstrap.sh"
+    "test-planning-execution.sh"
 )
 
 if [ -n "$SPECIFIC_TEST" ]; then
