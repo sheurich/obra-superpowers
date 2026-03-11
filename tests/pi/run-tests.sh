@@ -51,6 +51,7 @@ done
 tests=(
     "test-smoke.sh"
     "test-extension.sh"
+    "test-workflow.sh"
 )
 
 if [ -n "$SPECIFIC_TEST" ]; then
