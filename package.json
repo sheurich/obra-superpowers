@@ -2,5 +2,13 @@
   "name": "superpowers",
   "version": "5.0.7",
   "type": "module",
-  "main": ".opencode/plugins/superpowers.js"
+  "main": ".opencode/plugins/superpowers.js",
+  "description": "Core skills library: TDD, debugging, collaboration patterns, and proven techniques for coding agents",
+  "keywords": ["pi-package"],
+  "license": "MIT",
+  "repository": "https://github.com/obra/superpowers",
+  "pi": {
+    "extensions": [".pi/extensions/superpowers"],
+    "skills": ["skills"]
+  }
 }
