@@ -1,0 +1,13 @@
+{
+  "name": "superpowers",
+  "version": "5.0.2",
+  "private": true,
+  "description": "Core skills library: TDD, debugging, collaboration patterns, and proven techniques for coding agents",
+  "keywords": ["pi-package"],
+  "license": "MIT",
+  "repository": "https://github.com/obra/superpowers",
+  "pi": {
+    "extensions": [".pi/extensions/superpowers"],
+    "skills": ["skills"]
+  }
+}
