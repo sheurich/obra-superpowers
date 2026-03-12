@@ -10,7 +10,7 @@ Complete guide for using Superpowers with [pi](https://github.com/mariozechner/p
 pi install https://github.com/obra/superpowers
 ```
 
-Pi clones the repository and discovers all skills from the `skills/` directory automatically. No plugins, hooks, or bootstrap scripts required for skill loading. For subagent-based workflows, install the bundled agent profile from `.pi/agents/`.
+Pi clones the repository and discovers all skills from the `skills/` directory automatically. A bundled extension injects the `using-superpowers` bootstrap and Pi tool mapping on session start — no manual setup needed. For subagent-based workflows, install the bundled agent profile from `.pi/agents/`.
 
 ## Installation Options
 
@@ -150,15 +150,23 @@ Pi `subagent` tools typically provide three modes:
 
 ## Architecture
 
-Pi's package system discovers superpowers with zero integration code:
+Pi's package system discovers superpowers with minimal integration code:
 
-1. `pi install` clones the repo
+1. `pi install` clones the repo and reads `package.json` for the `pi` manifest
 2. Pi scans the `skills/` directory (convention-based discovery)
 3. Each `SKILL.md` frontmatter is parsed for name and description
 4. Skills appear in the system prompt's `<available_skills>` XML
 5. The agent loads full skill content on demand via `read`
+6. A bootstrap extension in `.pi/extensions/superpowers/` injects the `using-superpowers` skill and tool mapping on session start
 
-No plugins, hooks, bootstrap scripts, or CLI wrappers needed.
+### Bootstrap Extension
+
+The extension at `.pi/extensions/superpowers/index.ts`:
+
+- On `session_start`: reads the `using-superpowers` skill content, strips YAML frontmatter, caches it, and checks whether the `code-reviewer` agent profile is installed (notifies if missing)
+- On `before_agent_start` (every turn): appends the cached skill content and a Pi-specific tool mapping block (TodoWrite → markdown checklists, Task → subagent, Skill → `read` tool / `/skill:name`) to the system prompt
+
+This approach survives compaction (the system prompt is never compacted) and matches the behavior of the OpenCode system prompt transform plugin and the Claude Code `SessionStart` hook.
 
 ### Skill Locations
 
@@ -173,10 +181,9 @@ Pi discovers skills from multiple locations. On name collision, the first skill 
 
 Pi-specific resources live in `.pi/` in this repository:
 
-- `.pi/INSTALL.md`
-- `.pi/agents/code-reviewer.md`
-
-If we add Pi-specific extensions later, they should live under `.pi/extensions/`.
+- `.pi/INSTALL.md` — install instructions
+- `.pi/agents/code-reviewer.md` — agent profile for code review workflows
+- `.pi/extensions/superpowers/index.ts` — bootstrap extension (session start injection)
 
 ## Updating
 
@@ -224,11 +231,24 @@ Pi includes skill descriptions in the system prompt but relies on the model to d
 
 If the agent attempts a Claude Code tool that doesn't exist in pi, remind it of the mapping above.
 
+## Supported Workflow
+
+The primary supported end-to-end workflow on Pi is **planning → execution → review**:
+
+1. **`writing-plans`** — create a detailed implementation plan with bite-sized tasks
+2. **`subagent-driven-development`** — execute the plan with fresh subagents per task, with two-stage review
+3. **`requesting-code-review`** — dispatch the `code-reviewer` agent for quality verification
+
+This workflow requires:
+- The `subagent` tool (bundled with Pi or via the subagent extension)
+- The `code-reviewer` agent profile installed in `~/.pi/agent/agents/`
+
+Other workflows work on Pi too, but this path is tested and documented.
+
 ## Known Differences from Claude Code
 
-- **No `TodoWrite`** — Pi has no built-in task tracking tool. Skills that use `TodoWrite` checklists produce markdown checklists instead.
-- **No hooks system** — Pi doesn't inject bootstrap content on session start. The `using-superpowers` skill triggers via its description in `<available_skills>`.
-- **Skill loading** — Claude Code has a dedicated `Skill` tool. Pi uses `read` on SKILL.md files. Functionally equivalent, syntactically different.
+- **No `TodoWrite`** — Pi has no built-in task tracking tool. Skills that use `TodoWrite` checklists produce markdown checklists instead. If the `todo` extension is installed, the agent can use that.
+- **Skill loading** — Claude Code has a dedicated `Skill` tool. Pi uses `read` on SKILL.md files. Functionally equivalent, syntactically different. The bootstrap extension maps this automatically.
 - **Subagent model** — Pi core does not include built-in subagents. If your harness provides a `subagent` tool, Claude Code's `Task` usually maps to single mode.
 - **Agent profiles** — Pi packages do not auto-install agent profiles. Superpowers ships required Pi profiles in `.pi/agents/`; install them in `~/.pi/agent/agents/`.
 

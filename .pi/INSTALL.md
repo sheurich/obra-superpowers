@@ -11,7 +11,7 @@
 pi install https://github.com/obra/superpowers
 ```
 
-Pi clones the repo and discovers all skills from the `skills/` directory automatically.
+Pi clones the repo, discovers all skills from the `skills/` directory, and loads a bootstrap extension that injects tool mapping and the `using-superpowers` skill on session start.
 
 ### Alternative: Local Clone
 

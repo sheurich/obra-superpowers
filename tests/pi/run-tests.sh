@@ -36,6 +36,8 @@ while [[ $# -gt 0 ]]; do
             echo ""
             echo "Tests:"
             echo "  test-smoke.sh      Isolated install + skill discovery smoke test"
+            echo "  test-extension.sh  Bootstrap extension integration test"
+            echo "  test-workflow.sh   Workflow structural prerequisites test"
             exit 0
             ;;
         *)
@@ -48,6 +50,8 @@ done
 
 tests=(
     "test-smoke.sh"
+    "test-extension.sh"
+    "test-workflow.sh"
 )
 
 if [ -n "$SPECIFIC_TEST" ]; then
