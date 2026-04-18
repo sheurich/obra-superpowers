@@ -1,6 +1,6 @@
 # Superpowers for Pi
 
-> **Experimental.** Pi support is new. Report issues at <https://github.com/obra/superpowers/issues>.
+> **Experimental.** Pi support is new, and Phase 2 is intentionally scoped to one honest compatibility baseline rather than full harness parity.
 
 Complete guide for using Superpowers with [pi](https://github.com/mariozechner/pi-coding-agent).
 
@@ -10,188 +10,166 @@ Complete guide for using Superpowers with [pi](https://github.com/mariozechner/p
 pi install https://github.com/obra/superpowers
 ```
 
-Pi clones the repository and discovers all skills from the `skills/` directory automatically. A bundled extension injects the `using-superpowers` bootstrap and Pi tool mapping on session start — no manual setup needed. For subagent-based workflows, install the bundled agent profile from `.pi/agents/`.
+This installs Superpowers as a Pi package and loads a small bootstrap extension automatically.
 
-## Installation Options
+That install alone gives you the **plain Pi core baseline**:
+- skill discovery from the package
+- automatic `using-superpowers` bootstrap injection
+- Pi-specific tool guidance on each turn
+- planning and other non-subagent workflows
 
-### Prerequisites
+If you want isolated Task-style execution/review on Pi, continue with the supported external setup below.
 
-- [Pi](https://github.com/mariozechner/pi-coding-agent) installed
-- Git
+## Phase 2 Compatibility Baseline
 
-### Option A: Git Package (recommended)
+| Setup | What Phase 2 supports | What it does **not** claim |
+|---|---|---|
+| **Plain Pi core + Superpowers** | Package install, bootstrap injection, skill discovery, planning, `executing-plans`, and other non-subagent skills | No built-in subagents, no `TodoWrite` equivalent, no full Superpowers parity |
+| **Plain Pi core + Superpowers + Pi upstream `subagent` example extension + required agent profiles** | The documented isolated execution/review path for Phase 2 | Still no supported todo integration, no supported `plan-mode`, no broader parity claim |
+| **Pi example `todo` / `plan-mode` extensions** | Optional experiments only | Not part of the supported Phase 2 baseline |
+
+## What Plain Pi Core Supports
+
+With only `pi install https://github.com/obra/superpowers`:
+
+- Pi discovers skills from the package
+- the Superpowers bootstrap extension injects `using-superpowers` automatically
+- the extension detects that no `subagent` tool is available and steers Task-based workflows to fallback behavior
+- planning works normally on Pi
+- execution should use `superpowers:executing-plans` unless you install a compatible external `subagent` setup
+
+## Supported External Setup for Isolated Subagent Workflows
+
+The one supported Phase 2 subagent baseline is:
+
+1. **Superpowers installed as a Pi package**
+2. **Pi's upstream `examples/extensions/subagent` extension installed locally**
+3. **A general-purpose worker agent from that setup** — the documented baseline uses the upstream `worker` agent
+4. **Superpowers's bundled `code-reviewer` agent profile** installed into `~/.pi/agent/agents/`
+
+This repo does **not** ship the `subagent` tool itself.
+
+### Install Pi's upstream `subagent` example
+
+Resolve the path to your local Pi installation, then symlink the example extension:
 
 ```bash
-pi install https://github.com/obra/superpowers
+PI_INSTALL_DIR="$(node -p 'require("node:path").dirname(require.resolve("@mariozechner/pi-coding-agent/package.json"))')"
+SUBAGENT_DIR="$PI_INSTALL_DIR/examples/extensions/subagent"
+
+mkdir -p ~/.pi/agent/extensions/subagent
+ln -sf "$SUBAGENT_DIR/index.ts" ~/.pi/agent/extensions/subagent/index.ts
+ln -sf "$SUBAGENT_DIR/agents.ts" ~/.pi/agent/extensions/subagent/agents.ts
 ```
 
-This clones to `~/.pi/agent/git/github.com/obra/superpowers/` and adds the package to `~/.pi/agent/settings.json`.
-
-### Option B: Local Path
-
-If you already have a local clone:
+Install the minimum agent profile from that setup used by the documented baseline:
 
 ```bash
-pi install /path/to/superpowers
+mkdir -p ~/.pi/agent/agents
+ln -sf "$SUBAGENT_DIR/agents/worker.md" ~/.pi/agent/agents/worker.md
 ```
 
-### Option C: Symlink Skills Only
+> If your Pi installation does not expose `examples/extensions/subagent` at that path, use the equivalent files from a local Pi source checkout. The supported baseline is the upstream example extension and its `worker` agent, not an arbitrary third-party subagent package.
 
-To add superpowers skills alongside an existing skill tree:
+### Install Superpowers's bundled `code-reviewer`
 
-```bash
-ln -s /path/to/superpowers/skills ~/.pi/agent/skills/superpowers
-```
-
-> **Note:** Symlinked skills are not managed by `pi update` or shown by `pi list`. Update manually with `git pull`.
-
-### Verify Installation
-
-Check the package appears:
-
-```bash
-pi list
-```
-
-Then start pi and type `/skill:brainstorming` to confirm skills load.
-
-### Configure Required Subagent Profiles
-
-Some Superpowers skills dispatch a `code-reviewer` subagent.
-
-| Agent profile | Used by |
-|---|---|
-| `code-reviewer` | `requesting-code-review` and workflows that depend on it |
-
-Pi packages do not auto-install agent profiles, so install the bundled profile once:
-
-If installed from GitHub:
+If Superpowers was installed from GitHub:
 
 ```bash
 mkdir -p ~/.pi/agent/agents
 ln -sf ~/.pi/agent/git/github.com/obra/superpowers/.pi/agents/code-reviewer.md ~/.pi/agent/agents/code-reviewer.md
 ```
 
-If installed from a local path:
+If Superpowers was installed from a local path:
 
 ```bash
 mkdir -p ~/.pi/agent/agents
 ln -sf /path/to/superpowers/.pi/agents/code-reviewer.md ~/.pi/agent/agents/code-reviewer.md
 ```
 
-Verify:
+### Reload or restart Pi
+
+Start a fresh Pi session after installing the external setup, or run `/reload` in an existing session.
+
+## Verify Installation
+
+### Superpowers package
 
 ```bash
+pi list
+```
+
+You should see the Superpowers package in the installed package list.
+
+### Required files for the supported subagent baseline
+
+```bash
+ls ~/.pi/agent/extensions/subagent/index.ts
+ls ~/.pi/agent/agents/worker.md
 ls ~/.pi/agent/agents/code-reviewer.md
 ```
 
-## Usage
+If those files exist, the documented Phase 2 compatibility path is installed.
 
-### Finding Skills
+## Tool Mapping on Pi
 
-Pi lists available skills at startup in the `<available_skills>` section of the system prompt. The agent sees skill names and descriptions automatically.
+The bootstrap extension injects the correct guidance automatically on every turn.
 
-### Loading a Skill
-
-Three ways:
-
-1. **Automatic** — the agent reads a matching skill when a task fits its description
-2. **Command** — type `/skill:brainstorming` (or any skill name)
-3. **Direct** — the agent uses `read` on the SKILL.md file
-
-### Personal Skills
-
-Create skills in `~/.pi/agent/skills/`:
-
-```bash
-mkdir -p ~/.pi/agent/skills/my-skill
-```
-
-Create `~/.pi/agent/skills/my-skill/SKILL.md`:
-
-```markdown
----
-name: my-skill
-description: Use when [condition] - [what it does]
----
-
-# My Skill
-
-[Your skill content here]
-```
-
-### Project Skills
-
-Create project-specific skills in `.pi/skills/` within your project.
-
-## Tool Mapping
-
-Skills are written for Claude Code. Pi equivalents:
-
-| Claude Code | Pi | Notes |
+| Claude Code concept | Plain Pi core | Pi + supported subagent setup |
 |---|---|---|
-| `Skill` tool | `read` tool / `/skill:name` | Pi loads skill content via `read` |
-| `TodoWrite` | — | No direct equivalent; use markdown checklists |
-| `Task` with subagents | `subagent` tool | Requires a subagent extension and matching agent profiles (for example `code-reviewer`) |
-| `Read` | `read` | Same |
-| `Write` | `write` | Same |
-| `Edit` | `edit` | Same |
-| `Bash` | `bash` | Same |
+| `Skill` tool | `read` the skill's `SKILL.md`, or use `/skill:name` | Same |
+| `TodoWrite` | Markdown checklists | Markdown checklists |
+| `Task` with subagents | No direct equivalent; use `superpowers:executing-plans` | `subagent` tool with the installed Pi agent profiles from the supported setup |
+| `Read` / `Write` / `Edit` / `Bash` | Same names | Same names |
 
-### Subagent Differences
+When the supported subagent setup is present, use the documented subagent workflow path with the installed Pi agent profiles. Do not treat `subagent` alone as a broader parity guarantee.
 
-Pi core does not include built-in subagents. If your Pi harness provides a `subagent` tool, it maps to Claude Code's `Task` behavior.
+## Supported Phase 2 Path
 
-Pi `subagent` tools typically provide three modes:
+The supported Phase 2 path is intentionally narrow:
 
-- **single** — one agent, one task (closest to Claude Code's `Task`)
-- **parallel** — multiple independent tasks
-- **chain** — sequential tasks where each receives prior output
+1. Install Superpowers on Pi
+2. Use planning on Pi
+3. If the supported external `subagent` setup is installed, use isolated subagent-based execution/review on Pi
+4. Otherwise, use `superpowers:executing-plans` instead of claiming Task-style parity
 
 ## Architecture
 
-Pi's package system discovers superpowers with minimal integration code:
+Phase 2 uses Pi's native package and extension model:
 
-1. `pi install` clones the repo and reads `package.json` for the `pi` manifest
-2. Pi scans the `skills/` directory (convention-based discovery)
-3. Each `SKILL.md` frontmatter is parsed for name and description
-4. Skills appear in the system prompt's `<available_skills>` XML
-5. The agent loads full skill content on demand via `read`
-6. A bootstrap extension in `.pi/extensions/superpowers/` injects the `using-superpowers` skill and tool mapping on session start
+1. `package.json` declares Pi package metadata
+2. `.pi/extensions/superpowers/index.ts` reads `skills/using-superpowers/SKILL.md`
+3. On `before_agent_start`, it appends the bootstrap content to the system prompt
+4. The extension checks whether `subagent` is actually active and injects the matching guidance
+5. `TodoWrite` stays a markdown-checklist fallback in this phase
 
-### Bootstrap Extension
+## Validation in This Phase
 
-The extension at `.pi/extensions/superpowers/index.ts`:
+Phase 2 validation is intentionally honest and limited to:
 
-- On `session_start`: reads the `using-superpowers` skill content, strips YAML frontmatter, caches it, and checks whether the `code-reviewer` agent profile is installed (notifies if missing)
-- On `before_agent_start` (every turn): appends the cached skill content and a Pi-specific tool mapping block (TodoWrite → markdown checklists, Task → subagent, Skill → `read` tool / `/skill:name`) to the system prompt
+- isolated install/discovery checks
+- isolated extension resolution/loading checks
+- prompt-guidance checks with and without an active `subagent` tool
+- documentation/baseline checks
 
-This approach survives compaction (the system prompt is never compacted) and matches the behavior of the OpenCode system prompt transform plugin and the Claude Code `SessionStart` hook.
+It does **not** yet claim a true isolated end-to-end Superpowers workflow test on Pi. That belongs to Phase 3.
 
-### Skill Locations
+## Known Limitations
 
-Pi discovers skills from multiple locations. On name collision, the first skill found wins. See [pi's skill documentation](https://github.com/mariozechner/pi-coding-agent/blob/main/docs/skills.md) for authoritative loading order.
-
-- **Global** — `~/.pi/agent/skills/`
-- **Project** — `.pi/skills/`
-- **Settings/Packages** — `skills` array and installed packages
-- **CLI** — `--skill <path>`
-
-### Harness-Specific Files
-
-Pi-specific resources live in `.pi/` in this repository:
-
-- `.pi/INSTALL.md` — install instructions
-- `.pi/agents/code-reviewer.md` — agent profile for code review workflows
-- `.pi/extensions/superpowers/index.ts` — bootstrap extension (session start injection)
+- **No built-in subagents in Pi core** — isolated Task-style workflows require the documented external setup
+- **No `TodoWrite` equivalent in Phase 2** — task tracking falls back to markdown checklists
+- **No supported `plan-mode` or `todo` integration yet** — Pi's example extensions exist, but they are not part of the supported Phase 2 baseline
+- **No full parity claim** — this phase documents one compatibility baseline, not complete Claude/Codex/OpenCode parity
 
 ## Updating
+
+Update all installed Pi packages:
 
 ```bash
 pi update
 ```
 
-`pi update` updates all installed packages. To update only Superpowers:
+Update only Superpowers:
 
 ```bash
 pi update https://github.com/obra/superpowers
@@ -209,51 +187,43 @@ cd /path/to/superpowers && git pull
 pi remove https://github.com/obra/superpowers
 ```
 
-For symlink installs:
+For local path installs:
 
 ```bash
-rm ~/.pi/agent/skills/superpowers
+pi remove /path/to/superpowers
+```
+
+If you installed the supported external subagent baseline, remove those symlinks separately:
+
+```bash
+rm -f ~/.pi/agent/extensions/subagent/index.ts
+rm -f ~/.pi/agent/extensions/subagent/agents.ts
+rm -f ~/.pi/agent/agents/worker.md
+rm -f ~/.pi/agent/agents/code-reviewer.md
 ```
 
 ## Troubleshooting
 
-### Skills not found
+### Skills are not showing up
 
-1. Check package is installed: `pi list`
-2. Check skills exist: `ls ~/.pi/agent/git/github.com/obra/superpowers/skills/`
-3. Verify each skill has a `SKILL.md` with valid frontmatter
+1. Check the package is installed: `pi list`
+2. Confirm the package checkout exists under `~/.pi/agent/git/...` if you installed from GitHub
+3. Start a fresh Pi session after install
 
-### Skill not triggering automatically
+### The agent keeps treating Pi like Claude Code
 
-Pi includes skill descriptions in the system prompt but relies on the model to decide when to load them. Use `/skill:name` to load explicitly.
+That usually means the bootstrap extension did not load or Pi needs a fresh session. Restart Pi or run `/reload`.
 
-### Tool mapping confusion
+### The agent wants to use subagents, but plain Pi core is installed
 
-If the agent attempts a Claude Code tool that doesn't exist in pi, remind it of the mapping above.
+That's outside the plain-Pi baseline. Install the supported external `subagent` setup above, or tell the agent to use `superpowers:executing-plans`.
 
-## Supported Workflow
+### `requesting-code-review` cannot find `code-reviewer`
 
-The primary supported end-to-end workflow on Pi is **planning → execution → review**:
-
-1. **`writing-plans`** — create a detailed implementation plan with bite-sized tasks
-2. **`subagent-driven-development`** — execute the plan with fresh subagents per task, with two-stage review
-3. **`requesting-code-review`** — dispatch the `code-reviewer` agent for quality verification
-
-This workflow requires:
-- The `subagent` tool (bundled with Pi or via the subagent extension)
-- The `code-reviewer` agent profile installed in `~/.pi/agent/agents/`
-
-Other workflows work on Pi too, but this path is tested and documented.
-
-## Known Differences from Claude Code
-
-- **No `TodoWrite`** — Pi has no built-in task tracking tool. Skills that use `TodoWrite` checklists produce markdown checklists instead. If the `todo` extension is installed, the agent can use that.
-- **Skill loading** — Claude Code has a dedicated `Skill` tool. Pi uses `read` on SKILL.md files. Functionally equivalent, syntactically different. The bootstrap extension maps this automatically.
-- **Subagent model** — Pi core does not include built-in subagents. If your harness provides a `subagent` tool, Claude Code's `Task` usually maps to single mode.
-- **Agent profiles** — Pi packages do not auto-install agent profiles. Superpowers ships required Pi profiles in `.pi/agents/`; install them in `~/.pi/agent/agents/`.
+Install `.pi/agents/code-reviewer.md` into `~/.pi/agent/agents/` as shown above.
 
 ## Getting Help
 
 - Report issues: <https://github.com/obra/superpowers/issues>
-- Main documentation: <https://github.com/obra/superpowers>
+- Main repository: <https://github.com/obra/superpowers>
 - Pi documentation: <https://github.com/mariozechner/pi-coding-agent>

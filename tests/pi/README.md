@@ -1,6 +1,6 @@
 # Pi Test Suite
 
-Run all tests from repository root:
+Run all tests from the repository root:
 
 ```bash
 ./tests/pi/run-tests.sh
@@ -20,41 +20,44 @@ Run a specific test:
 
 ## Tests
 
-### `test-smoke.sh` — Install + Skill Discovery
+### `test-smoke.sh` — Isolated Install + Skill Discovery
 
 Verifies:
 
-1. `pi install` works with an isolated `PI_CODING_AGENT_DIR` (temp directory)
-2. The install writes package settings into that isolated directory
-3. Pi package resolution can discover `skills/brainstorming/SKILL.md` from this repo
-4. `pi list` shows the installed local package
-5. `~/.pi/agent/settings.json` is unchanged (guard against accidental global writes)
+1. `pi install` works with an isolated `HOME`
+2. `PI_CODING_AGENT_DIR` is isolated under that temporary home
+3. The install writes package settings into the isolated directory
+4. Pi package resolution can discover `skills/brainstorming/SKILL.md` from this repo
+5. Skill discovery does **not** leak in skills from the original home directory
+6. `pi list` shows the installed local package
+7. The real `~/.pi/agent/settings.json` is unchanged
 
-### `test-extension.sh` — Bootstrap Extension Integration
+### `test-extension.sh` — Bootstrap Extension Resolution + Loading
 
 Verifies:
 
-1. Extension file exists at `.pi/extensions/superpowers/index.ts`
-2. `package.json` declares the extension path in `pi.extensions`
-3. Extension has valid structure (exports default function, uses `ExtensionAPI`)
-4. Extension references `using-superpowers` skill content
-5. Extension contains tool mapping block
-6. Extension checks for `code-reviewer` agent profile
-7. Extension uses `before_agent_start` for compaction-resilient system prompt injection
-8. `pi install` succeeds with the extension package (live test, if `pi` is available)
+1. `package.json` declares `.pi/extensions/superpowers`
+2. `pi install` succeeds in an isolated environment
+3. Pi package resolution discovers the extension path from package metadata
+4. Pi can actually load the extension module successfully
+5. The extension registers `session_start` and `before_agent_start`
+6. The injected prompt guidance changes honestly based on runtime tool availability:
+   - no `subagent` tool → fallback to `executing-plans`
+   - `subagent` tool present → map Task-style workflows to `subagent`
+7. `TodoWrite` remains scoped to markdown-checklist fallback
 
-### `test-workflow.sh` — Workflow Integration (planning → execution → review)
+### `test-compatibility.sh` — Phase 2 Compatibility Baseline Docs
 
-Verifies structural prerequisites for the supported end-to-end workflow:
+Verifies:
 
-1. Required skills exist with valid frontmatter: `writing-plans`, `subagent-driven-development`, `requesting-code-review`
-2. `code-reviewer` agent profile exists with valid frontmatter
-3. Subagent prompt templates exist in `skills/subagent-driven-development/`
-4. Commands exist: `write-plan`, `execute-plan`
-5. Skill cross-references resolve correctly
-6. Extension tool mapping covers the `subagent` tool
+1. `docs/README.pi.md` names the supported external subagent setup and minimum required agent profiles
+2. `docs/README.pi.md` distinguishes plain Pi core from the supported subagent baseline
+3. `.pi/INSTALL.md` matches the same narrow Phase 2 promise
+4. `.pi/agents/README.md` makes clear that bundled agent profiles do not provide subagent support by themselves
+5. `README.md` keeps the top-level Pi description scoped honestly
+6. `.pi/agents/code-reviewer.md` still has valid frontmatter
 
 ## Requirements
 
-- `pi` in `PATH` (for live install tests; skipped if not available)
+- `pi` in `PATH`
 - `node` in `PATH`

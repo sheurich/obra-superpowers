@@ -53,7 +53,8 @@ info "Pi smoke test: isolated install + skill discovery"
 require_command pi
 require_command node
 
-DEFAULT_SETTINGS="$HOME/.pi/agent/settings.json"
+ORIGINAL_HOME="$HOME"
+DEFAULT_SETTINGS="$ORIGINAL_HOME/.pi/agent/settings.json"
 DEFAULT_STATE_BEFORE="$(file_state "$DEFAULT_SETTINGS")"
 
 TMP_ROOT="$(mktemp -d "${TMPDIR:-/tmp}/superpowers-pi-smoke.XXXXXX")"
@@ -62,8 +63,10 @@ cleanup() {
 }
 trap cleanup EXIT
 
-export PI_CODING_AGENT_DIR="$TMP_ROOT/agent"
-mkdir -p "$PI_CODING_AGENT_DIR"
+export HOME="$TMP_ROOT/home"
+export XDG_CONFIG_HOME="$HOME/.config"
+export PI_CODING_AGENT_DIR="$HOME/.pi/agent"
+mkdir -p "$PI_CODING_AGENT_DIR" "$XDG_CONFIG_HOME"
 
 PI_BIN="$(command -v pi)"
 if ! PI_REALPATH="$(node -e 'const fs=require("fs");console.log(fs.realpathSync(process.argv[1]))' "$PI_BIN" 2>/dev/null)"; then
@@ -71,12 +74,13 @@ if ! PI_REALPATH="$(node -e 'const fs=require("fs");console.log(fs.realpathSync(
 fi
 PI_PACKAGE_ROOT="$(cd "$(dirname "$PI_REALPATH")/.." && pwd)"
 
+info "Using isolated HOME: $HOME"
 info "Using isolated PI_CODING_AGENT_DIR: $PI_CODING_AGENT_DIR"
 info "Installing package from: $REPO_ROOT"
 
 if INSTALL_OUTPUT="$(pi install "$REPO_ROOT" 2>&1)"; then
     echo "$INSTALL_OUTPUT"
-    pass "pi install succeeded in isolated agent dir"
+    pass "pi install succeeded in isolated home"
 else
     echo "$INSTALL_OUTPUT" >&2
     fail "pi install failed"
@@ -86,7 +90,7 @@ SETTINGS_FILE="$PI_CODING_AGENT_DIR/settings.json"
 [ -f "$SETTINGS_FILE" ] || fail "expected settings file not found: $SETTINGS_FILE"
 pass "isolated settings file created"
 
-export REPO_ROOT PI_PACKAGE_ROOT SETTINGS_FILE
+export REPO_ROOT PI_PACKAGE_ROOT SETTINGS_FILE ORIGINAL_HOME
 if DISCOVERY_OUTPUT="$(node --input-type=module <<'NODE'
 import fs from 'node:fs';
 import path from 'node:path';
@@ -96,6 +100,7 @@ const repoRoot = path.resolve(process.env.REPO_ROOT);
 const settingsPath = process.env.SETTINGS_FILE;
 const packageRoot = process.env.PI_PACKAGE_ROOT;
 const agentDir = process.env.PI_CODING_AGENT_DIR;
+const originalHome = path.resolve(process.env.ORIGINAL_HOME);
 
 const settings = JSON.parse(fs.readFileSync(settingsPath, 'utf8'));
 const packages = Array.isArray(settings.packages) ? settings.packages : [];
@@ -132,12 +137,23 @@ if (!enabledSkillPaths.includes(brainstormingSkill)) {
   process.exit(1);
 }
 
+const disallowedRoots = [path.join(originalHome, '.agents'), path.join(originalHome, '.pi')].map((value) => path.resolve(value));
+const leakedFromOriginalHome = enabledSkillPaths.filter((skillPath) => {
+  const normalized = path.resolve(skillPath);
+  return disallowedRoots.some((root) => normalized === root || normalized.startsWith(root + path.sep));
+});
+if (leakedFromOriginalHome.length > 0) {
+  console.error(`resolved skills leaked from original HOME agent directories: ${leakedFromOriginalHome.join(', ')}`);
+  process.exit(1);
+}
+
 console.log(`Resolved skills: ${enabledSkillPaths.length}`);
 console.log(`Found: ${brainstormingSkill}`);
+console.log('No skills resolved from the original HOME.');
 NODE
 )"; then
     echo "$DISCOVERY_OUTPUT"
-    pass "Pi resolves brainstorming skill from installed package"
+    pass "Pi resolves brainstorming skill without leaking skills from the original HOME"
 else
     echo "$DISCOVERY_OUTPUT" >&2
     fail "skill discovery check failed"

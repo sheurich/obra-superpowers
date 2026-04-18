@@ -12,15 +12,52 @@
 
 ---
 
+## Scope Correction
+
+After reviewing current Pi docs/source/examples, Phase 2 should be interpreted more narrowly than the original outline.
+
+### What Phase 2 does
+
+Phase 2 provides:
+
+- Pi package metadata and bootstrap integration
+- Pi-specific startup/bootstrap behavior via `.pi/extensions/superpowers/`
+- one clearly documented compatibility baseline for using Superpowers on Pi
+- explicit documentation of required external setup for subagent-based workflows
+- isolated install/discovery/integration checks
+- clear documentation of supported behavior vs optional behavior vs limitations
+
+### What Phase 2 does not do
+
+Phase 2 does **not** yet provide full Superpowers parity on plain Pi core.
+
+In particular:
+
+- Pi core does **not** include built-in subagents, so subagent-driven workflows require a compatible external `subagent` tool/setup
+- Phase 2 does **not** provide a bundled TodoWrite-equivalent task tracker; TodoWrite references fall back to markdown checklists
+- Phase 2 does **not** make Pi’s example `plan-mode` or `todo` extensions part of the supported setup
+- Phase 2 does **not** claim full end-to-end Superpowers functionality on Pi
+- Phase 2 does **not** claim broader workflow parity beyond the initial documented path
+
+### Supported Phase 2 path
+
+The supported Phase 2 path is:
+
+- bootstrap/package integration
+- planning on Pi
+- execution/review on Pi **when a compatible subagent tool/setup is present and the documented agent profiles are installed**
+
+That is a real compatibility baseline, but it is not yet the final “full functionality” Pi setup.
+
 ## Open Design Decisions
 
-1. **Extension complexity** — Phase 2 ships a minimal `session_start` bootstrap extension. Plan-mode and todo-tool extensions are Phase 3. This keeps the PR reviewable and avoids committing to API surfaces prematurely.
+1. **Extension complexity** — Phase 2 ships only the minimal bootstrap integration needed for an honest compatibility baseline. Higher-fidelity Pi workflow support belongs in Phase 3.
 
-2. **`package.json` location** — Pi packages conventionally use a root `package.json` with a `pi` key. Superpowers has no `package.json` today. Adding one is the smallest change that enables explicit extension discovery. If the repo later adds npm-based tooling, this file already exists.
+2. **Task tracking** — Phase 2 uses markdown checklist fallback for `TodoWrite` references. A supported Pi todo-tool setup is Phase 3 scope.
 
-3. **Tool mapping approach** — The extension injects a text block mapping Claude Code tools to Pi equivalents. This is the same pattern the OpenCode plugin uses. No runtime tool shimming needed.
+3. **Plan mode** — Pi’s example `plan-mode` extension is useful, but it is not required for core Superpowers functionality. If adopted, it should be treated as a supported higher-fidelity setup in Phase 3, not a Phase 2 dependency.
 
-4. **Agent profile installation** — Phase 1 requires manual symlinks for `code-reviewer.md`. Phase 2 does not change this; auto-install is Phase 3 scope. The extension prints a one-time reminder if the profile is missing.
+4. **Subagent setup** — Phase 2 documents the need for a compatible external `subagent` tool/setup and required agent profiles. A bundled/supported higher-fidelity subagent story is Phase 3 scope.
 
 ---
 
@@ -435,9 +472,27 @@ git commit -m "docs(pi): update docs for Phase 2 extension and workflow support"
 | 4 | Workflow integration tests | `tests/pi/test-workflow.sh`, `tests/pi/run-tests.sh` |
 | 5 | Documentation updates | `docs/README.pi.md`, `.pi/INSTALL.md`, `tests/pi/README.md` |
 
-**What Phase 2 does NOT include (Phase 3):**
-- Plan-mode extension (Pi has its own plan-mode example)
-- Todo-tool extension (Pi has its own todo example)
-- Auto-install of agent profiles
-- `/write-plan` and `/execute-plan` as Pi commands (they exist as skill-triggered commands already)
-- Broader workflow parity beyond the planning→execution→review path
+**What Phase 2 does NOT include (moved to Phase 3):**
+- A supported higher-fidelity Pi workflow setup beyond the minimal compatibility baseline
+- A supported TodoWrite-equivalent todo tool bundled/adopted as part of the Pi setup
+- Optional adoption/adaptation of Pi’s `plan-mode` extension as part of the supported setup
+- A stronger/simpler supported subagent setup story beyond explicit external compatibility requirements
+- True high-fidelity parity claims for Superpowers functionality on Pi
+- Broader workflow coverage beyond the initial documented path
+
+## Phase 3 Handoff
+
+Phase 3 should focus on a supported higher-fidelity Pi setup rather than generic “parity work.”
+
+Recommended Phase 3 priorities:
+
+1. **Supported subagent setup**
+   - either bundle/adopt a compatible path or explicitly support one exact setup
+2. **Supported todo integration**
+   - adopt a TodoWrite-equivalent task tracker as part of the supported Pi setup
+3. **Optional plan-mode integration**
+   - adopt/adapt Pi’s example plan-mode extension if it improves the supported workflow
+4. **True isolated end-to-end tests**
+   - validate the supported higher-fidelity setup in isolation
+5. **Workflow expansion**
+   - only after the above is stable and documented

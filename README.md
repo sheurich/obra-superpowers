@@ -122,7 +122,12 @@ gemini extensions update superpowers
 pi install https://github.com/obra/superpowers
 ```
 
-Pi discovers skills from the `skills/` directory automatically. No plugins or bootstrap required for skills. For subagent-based workflows, install the bundled Pi agent profile from `.pi/agents/` (see docs).
+Superpowers installs as a Pi package and loads a small bootstrap extension automatically.
+
+Phase 2 support is intentionally narrow:
+- plain Pi core gives you the install/bootstrap/planning baseline
+- the documented isolated execution/review path additionally requires Pi's upstream `subagent` example extension plus the bundled `code-reviewer` agent profile
+- Todo/task-tracker and plan-mode integration are not part of the supported Phase 2 baseline
 
 **Detailed docs:** [docs/README.pi.md](docs/README.pi.md)
 

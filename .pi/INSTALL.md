@@ -1,41 +1,37 @@
 # Installing Superpowers for Pi
 
-## Prerequisites
-
-- [Pi](https://github.com/mariozechner/pi-coding-agent) installed
-- Git
-
-## Installation
+## 1. Install the package
 
 ```bash
 pi install https://github.com/obra/superpowers
 ```
 
-Pi clones the repo, discovers all skills from the `skills/` directory, and loads a bootstrap extension that injects tool mapping and the `using-superpowers` skill on session start.
+That gives you the **plain Pi core baseline** for Phase 2:
+- package install/discovery
+- automatic Superpowers bootstrap injection
+- planning and other non-subagent workflows
 
-### Alternative: Local Clone
+## 2. Install the supported subagent setup if you want isolated execution/review
 
-If you already have a local clone:
+Phase 2 does **not** bundle subagent support. The documented compatibility baseline uses Pi's upstream `examples/extensions/subagent` extension plus:
+- the upstream `worker` agent
+- Superpowers's bundled `code-reviewer` agent
+
+### Install Pi's upstream `subagent` example
 
 ```bash
-pi install /path/to/superpowers
+PI_INSTALL_DIR="$(node -p 'require("node:path").dirname(require.resolve("@mariozechner/pi-coding-agent/package.json"))')"
+SUBAGENT_DIR="$PI_INSTALL_DIR/examples/extensions/subagent"
+
+mkdir -p ~/.pi/agent/extensions/subagent
+ln -sf "$SUBAGENT_DIR/index.ts" ~/.pi/agent/extensions/subagent/index.ts
+ln -sf "$SUBAGENT_DIR/agents.ts" ~/.pi/agent/extensions/subagent/agents.ts
+
+mkdir -p ~/.pi/agent/agents
+ln -sf "$SUBAGENT_DIR/agents/worker.md" ~/.pi/agent/agents/worker.md
 ```
 
-## Verify
-
-Check that the package appears:
-
-```bash
-pi list
-```
-
-Then start pi and use `/skill:brainstorming` to confirm skills load.
-
-## Configure Required Subagents
-
-Some Superpowers skills call a `code-reviewer` subagent.
-
-Pi packages do not install agent profiles automatically, so install the bundled profile once:
+### Install Superpowers's bundled `code-reviewer`
 
 If installed from GitHub:
 
@@ -51,21 +47,37 @@ mkdir -p ~/.pi/agent/agents
 ln -sf /path/to/superpowers/.pi/agents/code-reviewer.md ~/.pi/agent/agents/code-reviewer.md
 ```
 
-Verify:
+Start a fresh Pi session after adding the external setup, or run `/reload`.
+
+## 3. What this phase does not install
+
+Phase 2 does **not** make Pi's example `todo` or `plan-mode` extensions part of the supported setup.
+`TodoWrite` still falls back to markdown checklists.
+
+## Verify
 
 ```bash
+pi list
+ls ~/.pi/agent/extensions/subagent/index.ts
+ls ~/.pi/agent/agents/worker.md
 ls ~/.pi/agent/agents/code-reviewer.md
 ```
 
 ## Updating
 
-Update superpowers:
+Update only Superpowers:
 
 ```bash
 pi update https://github.com/obra/superpowers
 ```
 
-Or pull manually if using a local path:
+Or update all packages:
+
+```bash
+pi update
+```
+
+For local path installs, pull manually:
 
 ```bash
 cd /path/to/superpowers && git pull
@@ -77,7 +89,7 @@ cd /path/to/superpowers && git pull
 pi remove https://github.com/obra/superpowers
 ```
 
-Or, if installed from a local path:
+For local path installs:
 
 ```bash
 pi remove /path/to/superpowers
