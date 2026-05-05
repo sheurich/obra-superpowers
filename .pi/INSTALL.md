@@ -13,9 +13,10 @@ That gives you the **plain Pi core baseline** for Phase 2:
 
 ## 2. Install the supported subagent setup if you want isolated execution/review
 
-Phase 2 does **not** bundle subagent support. The documented compatibility baseline uses Pi's upstream `examples/extensions/subagent` extension plus:
-- the upstream `worker` agent
-- Superpowers's bundled `code-reviewer` agent
+Phase 2 does **not** bundle subagent support. The documented compatibility baseline uses Pi's upstream `examples/extensions/subagent` extension plus the upstream `worker` agent.
+
+Review dispatch uses the builtin `reviewer` agent from pi-subagents (no custom
+agent install needed).
 
 ### Install Pi's upstream `subagent` example
 
@@ -31,22 +32,6 @@ mkdir -p ~/.pi/agent/agents
 ln -sf "$SUBAGENT_DIR/agents/worker.md" ~/.pi/agent/agents/worker.md
 ```
 
-### Install Superpowers's bundled `code-reviewer`
-
-If installed from GitHub:
-
-```bash
-mkdir -p ~/.pi/agent/agents
-ln -sf ~/.pi/agent/git/github.com/obra/superpowers/.pi/agents/code-reviewer.md ~/.pi/agent/agents/code-reviewer.md
-```
-
-If installed from a local path:
-
-```bash
-mkdir -p ~/.pi/agent/agents
-ln -sf /path/to/superpowers/.pi/agents/code-reviewer.md ~/.pi/agent/agents/code-reviewer.md
-```
-
 Start a fresh Pi session after adding the external setup, or run `/reload`.
 
 ## 3. What this phase does not install
@@ -60,7 +45,6 @@ Phase 2 does **not** make Pi's example `todo` or `plan-mode` extensions part of 
 pi list
 ls ~/.pi/agent/extensions/subagent/index.ts
 ls ~/.pi/agent/agents/worker.md
-ls ~/.pi/agent/agents/code-reviewer.md
 ```
 
 ## Updating

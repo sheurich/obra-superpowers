@@ -29,9 +29,7 @@ function getAgentDir(): string {
 	return process.env.PI_CODING_AGENT_DIR || path.join(os.homedir(), ".pi", "agent");
 }
 
-function hasInstalledAgent(agentName: string): boolean {
-	return fs.existsSync(path.join(getAgentDir(), "agents", `${agentName}.md`));
-}
+
 
 function getActiveToolNames(pi: ExtensionAPI): string[] {
 	try {
@@ -49,7 +47,7 @@ function hasSubagentTool(pi: ExtensionAPI): boolean {
 	return getActiveToolNames(pi).includes("subagent");
 }
 
-function buildToolMapping(options: { hasSubagent: boolean; hasCodeReviewer: boolean }): string {
+function buildToolMapping(options: { hasSubagent: boolean }): string {
 	const lines = [
 		"**Tool Mapping for Pi:**",
 		"When skills reference tools you don't have, substitute Pi equivalents that actually exist in this session:",
@@ -64,15 +62,9 @@ function buildToolMapping(options: { hasSubagent: boolean; hasCodeReviewer: bool
 		lines.push(
 			"- For general isolated implementation work, use the general-purpose agent/profile from the installed subagent setup. The documented Phase 2 baseline uses Pi's upstream example `worker` agent.",
 		);
-		if (options.hasCodeReviewer) {
-			lines.push(
-				"- For `superpowers:requesting-code-review`, prefer the bundled `code-reviewer` agent profile when dispatching review work.",
-			);
-		} else {
-			lines.push(
-				"- `code-reviewer` is not installed in the Pi agents directory, so do not assume the dedicated review profile exists. Ask the user to install `.pi/agents/code-reviewer.md` or fall back to in-session review.",
-			);
-		}
+		lines.push(
+			"- For `superpowers:code-reviewer` or `superpowers:requesting-code-review`, use the builtin `reviewer` agent. It inherits the session model automatically.",
+		);
 	} else {
 		lines.push("- `Task` tool with subagents → no direct equivalent in this session. No active `subagent` tool was detected.");
 		lines.push("");
@@ -96,7 +88,7 @@ function buildToolMapping(options: { hasSubagent: boolean; hasCodeReviewer: bool
 	return lines.join("\n");
 }
 
-function buildBootstrap(skillBody: string, options: { hasSubagent: boolean; hasCodeReviewer: boolean }): string {
+function buildBootstrap(skillBody: string, options: { hasSubagent: boolean }): string {
 	return `<EXTREMELY_IMPORTANT>
 You have superpowers.
 
@@ -129,7 +121,6 @@ export default function superpowersExtension(pi: ExtensionAPI): void {
 		}
 
 		const subagentAvailable = hasSubagentTool(pi);
-		const codeReviewerInstalled = hasInstalledAgent("code-reviewer");
 
 		if (!subagentAvailable) {
 			ctx.ui.notify(
@@ -137,13 +128,6 @@ export default function superpowersExtension(pi: ExtensionAPI): void {
 				"info",
 			);
 			return;
-		}
-
-		if (!codeReviewerInstalled) {
-			ctx.ui.notify(
-				"Superpowers: subagent tool detected, but code-reviewer is not installed. The documented review path needs ~/.pi/agent/agents/code-reviewer.md. See .pi/agents/README.md for install instructions.",
-				"info",
-			);
 		}
 	});
 
@@ -156,7 +140,6 @@ export default function superpowersExtension(pi: ExtensionAPI): void {
 				"\n\n" +
 				buildBootstrap(skillBody, {
 					hasSubagent: hasSubagentTool(pi),
-					hasCodeReviewer: hasInstalledAgent("code-reviewer"),
 				}),
 		};
 	});
