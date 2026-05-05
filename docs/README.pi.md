@@ -45,7 +45,7 @@ The one supported Phase 2 subagent baseline is:
 1. **Superpowers installed as a Pi package**
 2. **Pi's upstream `examples/extensions/subagent` extension installed locally**
 3. **A general-purpose worker agent from that setup** — the documented baseline uses the upstream `worker` agent
-4. **Superpowers's bundled `code-reviewer` agent profile** installed into `~/.pi/agent/agents/`
+4. **The builtin `reviewer` agent from pi-subagents** — handles review dispatch via `subagents.agentOverrides` (no custom agent install needed)
 
 This repo does **not** ship the `subagent` tool itself.
 
@@ -71,21 +71,12 @@ ln -sf "$SUBAGENT_DIR/agents/worker.md" ~/.pi/agent/agents/worker.md
 
 > If your Pi installation does not expose `examples/extensions/subagent` at that path, use the equivalent files from a local Pi source checkout. The supported baseline is the upstream example extension and its `worker` agent, not an arbitrary third-party subagent package.
 
-### Install Superpowers's bundled `code-reviewer`
+### Review dispatch
 
-If Superpowers was installed from GitHub:
-
-```bash
-mkdir -p ~/.pi/agent/agents
-ln -sf ~/.pi/agent/git/github.com/obra/superpowers/.pi/agents/code-reviewer.md ~/.pi/agent/agents/code-reviewer.md
-```
-
-If Superpowers was installed from a local path:
-
-```bash
-mkdir -p ~/.pi/agent/agents
-ln -sf /path/to/superpowers/.pi/agents/code-reviewer.md ~/.pi/agent/agents/code-reviewer.md
-```
+Review dispatch uses the builtin `reviewer` agent from pi-subagents. No custom
+agent install is needed. The superpowers extension translates
+`superpowers:code-reviewer` references in skills to the builtin `reviewer`
+automatically.
 
 ### Reload or restart Pi
 
@@ -106,7 +97,6 @@ You should see the Superpowers package in the installed package list.
 ```bash
 ls ~/.pi/agent/extensions/subagent/index.ts
 ls ~/.pi/agent/agents/worker.md
-ls ~/.pi/agent/agents/code-reviewer.md
 ```
 
 If those files exist, the documented Phase 2 compatibility path is installed.
@@ -199,7 +189,6 @@ If you installed the supported external subagent baseline, remove those symlinks
 rm -f ~/.pi/agent/extensions/subagent/index.ts
 rm -f ~/.pi/agent/extensions/subagent/agents.ts
 rm -f ~/.pi/agent/agents/worker.md
-rm -f ~/.pi/agent/agents/code-reviewer.md
 ```
 
 ## Troubleshooting
@@ -218,9 +207,12 @@ That usually means the bootstrap extension did not load or Pi needs a fresh sess
 
 That's outside the plain-Pi baseline. Install the supported external `subagent` setup above, or tell the agent to use `superpowers:executing-plans`.
 
-### `requesting-code-review` cannot find `code-reviewer`
+### `requesting-code-review` dispatches to wrong agent
 
-Install `.pi/agents/code-reviewer.md` into `~/.pi/agent/agents/` as shown above.
+The superpowers extension translates `superpowers:code-reviewer` references to
+the builtin `reviewer` automatically. If you see errors about a missing
+`code-reviewer` agent, remove any stale symlink at `~/.pi/agent/agents/code-reviewer.md`
+and restart Pi.
 
 ## Getting Help
 

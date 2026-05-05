@@ -159,7 +159,6 @@ if (!notifications.some((entry) => entry.message.includes('no active subagent to
 }
 
 await fs.promises.mkdir(path.join(agentDir, 'agents'), { recursive: true });
-await fs.promises.writeFile(path.join(agentDir, 'agents', 'code-reviewer.md'), 'placeholder\n', 'utf8');
 notifications.length = 0;
 runtime.getActiveTools = () => ['read', 'write', 'edit', 'bash', 'subagent'];
 await sessionStart({ reason: 'reload' }, ctx);
@@ -181,8 +180,8 @@ if (withSubagentPrompt.systemPrompt.includes('isolated Task-style workflows are 
   console.error('prompt still used the overly broad subagent wording');
   process.exit(1);
 }
-if (!withSubagentPrompt.systemPrompt.includes('bundled `code-reviewer` agent profile')) {
-  console.error('prompt did not mention the code-reviewer profile when installed');
+if (!withSubagentPrompt.systemPrompt.includes('use the builtin `reviewer` agent')) {
+  console.error('prompt did not mention the builtin reviewer agent when subagent tool is available');
   process.exit(1);
 }
 if (withSubagentPrompt.systemPrompt.includes('no direct equivalent in this session')) {
